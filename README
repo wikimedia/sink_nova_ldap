@@ -1,0 +1,8 @@
+I'm using 'stdeb' to build debian packages here.  To build:
+
+$ sudo apt-get install python-stdeb
+$ python setup.py --command-packages=stdeb.command bdist_deb
+$ ls deb_dist/*.deb
+
+Note that due to file-system weirdness, stddeb errors out on labs
+boxes.  I'm running it on a VirtualBox VM without any trouble.
