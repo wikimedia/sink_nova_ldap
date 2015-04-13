@@ -39,6 +39,12 @@ cfg.CONF.register_opts([
 
     cfg.MultiStrOpt('puppetdefaultclasses', default=None),
     cfg.MultiStrOpt('puppetdefaultvars', default=None),
+
+    cfg.StrOpt('certmanager_user', default='certmanager'),
+    cfg.StrOpt('puppet_key_format', default=None),
+    cfg.StrOpt('salt_key_format', default=None),
+    cfg.StrOpt('puppet_master_host', default=None),
+    cfg.StrOpt('salt_master_host', default=None),
 ], group='handler:nova_ldap')
 
 
