@@ -33,12 +33,12 @@ cfg.CONF.register_opts([
     cfg.StrOpt('control-exchange', default='nova'),
     cfg.StrOpt('domain_id', default=None),
 
-    cfg.MultiStrOpt('format', default=[]),
+    cfg.ListOpt('format', default=[]),
     cfg.StrOpt('ldapusername', default=None),
     cfg.StrOpt('ldappassword', default=None),
 
-    cfg.MultiStrOpt('puppetdefaultclasses', default=None),
-    cfg.MultiStrOpt('puppetdefaultvars', default=None),
+    cfg.ListOpt('puppetdefaultclasses', default=None),
+    cfg.ListOpt('puppetdefaultvars', default=None),
 
     cfg.StrOpt('certmanager_user', default='certmanager'),
     cfg.StrOpt('puppet_key_format', default=None),

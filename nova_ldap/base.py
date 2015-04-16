@@ -111,7 +111,7 @@ class BaseAddressLdapHandler(BaseAddressHandler):
 
         event_data = data.copy()
         event_data.update(get_ip_data(addr))
-        dc = "%(hostname)s.%(tenant_id)s.%(domain)s" % event_data
+        dc = ("%(hostname)s.%(tenant_id)s.%(domain)s" % event_data).rstrip('.')
         dn = "dc=%s,ou=hosts,dc=wikimedia,dc=org" % dc
 
         hostEntry = {}
@@ -135,7 +135,7 @@ class BaseAddressLdapHandler(BaseAddressHandler):
                                       event_data['hostname'])
 
         for fmt in cfg.CONF[self.name].get('format'):
-            hostEntry['associatedDomain'].append(fmt % event_data)
+            hostEntry['associatedDomain'].append((fmt % event_data).rstrip('.'))
 
         if managed:
             LOG.debug('Creating ldap record')
