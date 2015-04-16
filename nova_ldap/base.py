@@ -93,7 +93,6 @@ class BaseAddressLdapHandler(BaseAddressHandler):
         :param resource_type: The managed resource type
         :param resource_id: The managed resource ID
         """
-        LOG.debug('Initializing ldap')
         self._initLdap()
         if not self._openLdap():
             return
@@ -111,7 +110,9 @@ class BaseAddressLdapHandler(BaseAddressHandler):
 
         event_data = data.copy()
         event_data.update(get_ip_data(addr))
-        dc = ("%(hostname)s.%(tenant_id)s.%(domain)s" % event_data).rstrip('.')
+        dc = "%(hostname)s.%(tenant_id)s.%(domain)s" % event_data
+        # ldap doesn't like trailing .s
+        dc = dc.rstrip('.').encode('utf8')
         dn = "dc=%s,ou=hosts,dc=wikimedia,dc=org" % dc
 
         hostEntry = {}
@@ -123,19 +124,21 @@ class BaseAddressLdapHandler(BaseAddressHandler):
                                     'top']
         hostEntry['l'] = 'eqiad'
         hostEntry['dc'] = dc
-        hostEntry['aRecord'] = addr
-        hostEntry['puppetClass'] = cfg.CONF[self.name].get(
-            'puppetdefaultclasses')
-        hostEntry['puppetVar'] = cfg.CONF[self.name].get(
-            'puppetdefaultvars')
+        hostEntry['aRecord'] = addr['address'].encode('utf8')
+        hostEntry['puppetClass'] = []
+        hostEntry['puppetVar'] = []
+        for cls in cfg.CONF[self.name].get('puppetdefaultclasses'):
+            hostEntry['puppetClass'].append(cls)
+        for var in cfg.CONF[self.name].get('puppetdefaultvars'):
+            hostEntry['puppetVar'].append(var)
         hostEntry['associatedDomain'] = []
         hostEntry['puppetVar'].append('instanceproject=%s' %
-                                      event_data['tenant_id'])
+                                      event_data['tenant_id'].encode('utf8'))
         hostEntry['puppetVar'].append('instancename=%s' %
-                                      event_data['hostname'])
+                                      event_data['hostname'].encode('utf8'))
 
         for fmt in cfg.CONF[self.name].get('format'):
-            hostEntry['associatedDomain'].append((fmt % event_data).rstrip('.'))
+            hostEntry['associatedDomain'].append((fmt % event_data).rstrip('.').encode('utf8'))
 
         if managed:
             LOG.debug('Creating ldap record')
@@ -168,9 +171,14 @@ class BaseAddressLdapHandler(BaseAddressHandler):
         event_data = data.copy()
 
         dc = "%(hostname)s.%(tenant_id)s.%(domain)s" % event_data
+        dc = dc.rstrip('.').encode('utf8')
         dn = "dc=%s,ou=hosts,dc=wikimedia,dc=org" % dc
 
-        self.ds.delete_s(dn)
+        LOG.debug('Deleting ldap record: %s' % dn)
+        try:
+            self.ds.delete_s(dn)
+        except ldap.NO_SUCH_OBJECT:
+            LOG.debug('Warning:  %s not found in ldap.  Not deleted.' % dn)
 
         self._closeLdap()
 
@@ -179,32 +187,32 @@ class BaseAddressLdapHandler(BaseAddressHandler):
         if (cfg.CONF[self.name].puppet_key_format and
                 cfg.CONF[self.name].puppet_master_host):
             puppetkey = cfg.CONF[self.name].puppet_key_format % event_data
+            puppetkey = puppetkey.rstrip('.').encode('utf8')
             LOG.debug('Cleaning puppet key %s' % puppetkey)
-            _run_remote_command(cfg.CONF[self.name].puppet_master_host,
-                                cfg.CONF[self.name].certmanager_user,
-                                'sudo puppet cert clean %s' % puppetkey)
+            self._run_remote_command(cfg.CONF[self.name].puppet_master_host,
+                                     cfg.CONF[self.name].certmanager_user,
+                                     'sudo puppet cert clean %s' % puppetkey)
 
         if (cfg.CONF[self.name].salt_key_format and
                 cfg.CONF[self.name].salt_master_host):
             saltkey = cfg.CONF[self.name].salt_key_format % event_data
+            saltkey = saltkey.rstrip('.').encode('utf8')
             LOG.debug('Cleaning salt key %s' % saltkey)
-            _run_remote_command(cfg.CONF[self.name].salt_master_host,
-                                cfg.CONF[self.name].certmanager_user,
-                                'sudo salt-key -y -d  %s' % saltkey)
+            self._run_remote_command(cfg.CONF[self.name].salt_master_host,
+                                     cfg.CONF[self.name].certmanager_user,
+                                     'sudo salt-key -y -d  %s' % saltkey)
 
-    def _run_remote_command(server, username, command):
+    def _run_remote_command(self, server, username, command):
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         try:
-            ssh = paramiko.SSHClient()
-            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            try:
-                ssh.connect(server, username=username)
-            except (paramiko.SSHException, socket.error):
-                LOG.warning('Failed to connect to %s' % server)
-                return
-            stdin, stdout, stderr = ssh.exec_command(command)
-            LOG.debug('remote call produced stdout %s' % stdout)
-            LOG.debug('remote call produced stderr %s' % stderr)
-            return stdout.readlines()
-        except Exception:
-            LOG.warning('Unable to connect to %s' % server)
+            ssh.connect(server, username=username)
+        except (paramiko.SSHException, socket.error):
+            LOG.warning('Failed to connect to %s' % server)
             return
+        stdin, stdout, stderr = ssh.exec_command(command)
+        outlines = stdout.readlines()
+        errlines = stderr.readlines()
+        LOG.debug('remote call produced stdout %s' % outlines)
+        LOG.debug('remote call produced stderr %s' % errlines)
+        return

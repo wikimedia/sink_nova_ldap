@@ -25,7 +25,7 @@ LOG = logging.getLogger(__name__)
 
 cfg.CONF.register_group(cfg.OptGroup(
     name='handler:nova_ldap',
-    title="Configuration for Nova Ldap Handler (WMF-specific transitional code)"
+    title="Configuration for Nova Ldap Handler (WMF-specific transitional)"
 ))
 
 cfg.CONF.register_opts([
