@@ -22,6 +22,7 @@ from designate.context import DesignateContext
 from designate.notification_handler.base import BaseAddressHandler
 from designate.notification_handler.base import get_ip_data
 from designate.plugin import ExtensionPlugin
+from novaclient.v1_1 import client as novaclient
 
 import ldap
 import ldap.modlist
@@ -141,12 +142,19 @@ class BaseAddressLdapHandler(BaseAddressHandler):
             hostEntry['associatedDomain'].append((fmt % event_data).rstrip('.').encode('utf8'))
 
         if managed:
+            # shove the project id into instance metadata
+            self._update_metadata(event_data['instance_id'], event_data['tenant_id'])
+
             LOG.debug('Creating ldap record')
 
             modlist = ldap.modlist.addModlist(hostEntry)
-            self.ds.add_s(dn, modlist)
+            try:
+                self.ds.add_s(dn, modlist)
+            except ldap.LDAPError as e :
+                LOG.debug('Ldap exception %s' % e)
 
         self._closeLdap()
+
 
     def _delete(self, extra, managed=True, resource_id=None,
                 resource_type='instance', criterion={}):
@@ -201,6 +209,23 @@ class BaseAddressLdapHandler(BaseAddressHandler):
             self._run_remote_command(cfg.CONF[self.name].salt_master_host,
                                      cfg.CONF[self.name].certmanager_user,
                                      'sudo salt-key -y -d  %s' % saltkey)
+
+    def _update_metadata(self, instance_id, instance_project):
+        try:
+            username = cfg.CONF[self.name].nova_auth_name
+            passwd = cfg.CONF[self.name].nova_auth_pass
+            project = cfg.CONF[self.name].nova_auth_project
+            url = cfg.CONF[self.name].nova_auth_url
+        except keyerror:
+            LOG.debug('Missing a config setting for nova auth.')
+            return
+
+        try:
+            nova_client = novaclient.Client(username, passwd, project, url)
+        except exceptions.Unauthorized:
+            LOG.debug('Nova client auth failed.')
+            return
+        nova_client.servers.set_meta_item(instance_id, "project-id", instance_project)
 
     def _run_remote_command(self, server, username, command):
         ssh = paramiko.SSHClient()
