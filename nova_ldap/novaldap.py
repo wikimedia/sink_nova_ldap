@@ -59,8 +59,7 @@ class NovaFixedLdapHandler(BaseAddressLdapHandler):
     def get_exchange_topics(self):
         exchange = cfg.CONF[self.name].control_exchange
 
-        topics = [topic + ".info"
-                  for topic in cfg.CONF[self.name].notification_topics]
+        topics = [topic for topic in cfg.CONF[self.name].notification_topics]
 
         return (exchange, topics)
 
@@ -70,7 +69,7 @@ class NovaFixedLdapHandler(BaseAddressLdapHandler):
             'compute.instance.delete.start',
         ]
 
-    def process_notification(self, event_type, payload):
+    def process_notification(self, context, event_type, payload):
         LOG.debug('NovaLdapHandler received notification - %s' % event_type)
 
         if event_type == 'compute.instance.create.end':
