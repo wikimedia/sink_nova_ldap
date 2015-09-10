@@ -16,13 +16,13 @@
 import abc
 from oslo.config import cfg
 from designate import exceptions
-from designate.openstack.common import log as logging
 from designate.central import rpcapi as central_rpcapi
 from designate.context import DesignateContext
 from designate.notification_handler.base import BaseAddressHandler
 from designate.notification_handler.base import get_ip_data
 from designate.plugin import ExtensionPlugin
 from novaclient.v1_1 import client as novaclient
+from oslo_log import log as logging
 
 import ldap
 import ldap.modlist
