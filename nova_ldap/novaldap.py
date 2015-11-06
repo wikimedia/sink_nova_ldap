@@ -49,6 +49,11 @@ cfg.CONF.register_opts([
     cfg.StrOpt('nova_auth_pass', default=None),
     cfg.StrOpt('nova_auth_project', default=None),
     cfg.StrOpt('nova_auth_url', default=None),
+
+    cfg.StrOpt('keystone_auth_name', default=None),
+    cfg.StrOpt('keystone_auth_pass', default=None),
+    cfg.StrOpt('keystone_auth_project', default=None),
+    cfg.StrOpt('keystone_auth_url', default=None),
 ], group='handler:nova_ldap')
 
 
