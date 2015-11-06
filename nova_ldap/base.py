@@ -111,23 +111,15 @@ class BaseAddressLdapHandler(BaseAddressHandler):
         LOG.debug('Event data: %s' % data)
         data['domain'] = domain['name']
 
-         # Extra magic!  The event record contains a tenant id but not a tenant 
-        #  if our formats include project_name then we need to ask keystone for
-        need_project_name = False
-        for fmt in cfg.CONF[self.name].get('format'):
-            if 'project_name' in fmt:
-                need_project_name = True
-                break
-        if need_project_name:
-            project_name = self._resolve_project_name(data['tenant_id'])
-            data['project_name'] = project_name
+        project_name = self._resolve_project_name(data['tenant_id'])
+        data['project_name'] = project_name
 
         # Just one ldap entry per host, please.
         addr = addresses[0]
 
         event_data = data.copy()
         event_data.update(get_ip_data(addr))
-        dc = "%(hostname)s.%(tenant_id)s.%(domain)s" % event_data
+        dc = "%(hostname)s.%(project_name)s.%(domain)s" % event_data
         # ldap doesn't like trailing .s
         dc = dc.rstrip('.').encode('utf8')
         dn = "dc=%s,ou=hosts,dc=wikimedia,dc=org" % dc
@@ -150,7 +142,7 @@ class BaseAddressLdapHandler(BaseAddressHandler):
             hostEntry['puppetVar'].append(var)
         hostEntry['associatedDomain'] = []
         hostEntry['puppetVar'].append('instanceproject=%s' %
-                                      event_data['tenant_id'].encode('utf8'))
+                                      event_data['project_name'].encode('utf8'))
         hostEntry['puppetVar'].append('instancename=%s' %
                                       event_data['hostname'].encode('utf8'))
 
@@ -159,7 +151,7 @@ class BaseAddressLdapHandler(BaseAddressHandler):
 
         if managed:
             # shove the project id into instance metadata
-            self._update_metadata(event_data['instance_id'], event_data['tenant_id'])
+            self._update_metadata(event_data['instance_id'], event_data['project_name'])
 
             LOG.debug('Creating ldap record')
 
@@ -192,9 +184,12 @@ class BaseAddressLdapHandler(BaseAddressHandler):
         LOG.debug('Event data: %s' % data)
         data['domain'] = domain['name']
 
+        project_name = self._resolve_project_name(data['tenant_id'])
+        data['project_name'] = project_name
+
         event_data = data.copy()
 
-        dc = "%(hostname)s.%(tenant_id)s.%(domain)s" % event_data
+        dc = "%(hostname)s.%(project_name)s.%(domain)s" % event_data
         dc = dc.rstrip('.').encode('utf8')
         dn = "dc=%s,ou=hosts,dc=wikimedia,dc=org" % dc
 
