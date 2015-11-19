@@ -37,8 +37,8 @@ cfg.CONF.register_opts([
     cfg.StrOpt('ldapusername', default=None),
     cfg.StrOpt('ldappassword', default=None),
 
-    cfg.ListOpt('puppetdefaultclasses', default=None),
-    cfg.ListOpt('puppetdefaultvars', default=None),
+    cfg.ListOpt('puppetdefaultclasses', default=[]),
+    cfg.ListOpt('puppetdefaultvars', default=[]),
 
     cfg.StrOpt('certmanager_user', default='certmanager'),
     cfg.StrOpt('puppet_key_format', default=None),
