@@ -31,7 +31,8 @@ from oslo_log import log as logging
 
 import ldap
 import ldap.modlist
-import paramiko
+import pipes
+import subprocess
 
 LOG = logging.getLogger(__name__)
 central_api = central_rpcapi.CentralAPI()
@@ -158,11 +159,10 @@ class BaseAddressLdapHandler(BaseAddressHandler):
             modlist = ldap.modlist.addModlist(hostEntry)
             try:
                 self.ds.add_s(dn, modlist)
-            except ldap.LDAPError as e :
+            except ldap.LDAPError as e:
                 LOG.debug('Ldap exception %s' % e)
 
         self._closeLdap()
-
 
     def _delete(self, extra, managed=True, resource_id=None,
                 resource_type='instance', criterion={}):
@@ -210,7 +210,7 @@ class BaseAddressLdapHandler(BaseAddressHandler):
             LOG.debug('Cleaning puppet key %s' % puppetkey)
             self._run_remote_command(cfg.CONF[self.name].puppet_master_host,
                                      cfg.CONF[self.name].certmanager_user,
-                                     'sudo puppet cert clean %s' % puppetkey)
+                                     'sudo puppet cert clean %s' % pipes.quote(puppetkey))
 
         if (cfg.CONF[self.name].salt_key_format and
                 cfg.CONF[self.name].salt_master_host):
@@ -219,7 +219,7 @@ class BaseAddressLdapHandler(BaseAddressHandler):
             LOG.debug('Cleaning salt key %s' % saltkey)
             self._run_remote_command(cfg.CONF[self.name].salt_master_host,
                                      cfg.CONF[self.name].certmanager_user,
-                                     'sudo salt-key -y -d  %s' % saltkey)
+                                     'sudo salt-key -y -d  %s' % pipes.quote(saltkey))
 
     def _update_metadata(self, instance_id, instance_project):
         try:
@@ -239,19 +239,18 @@ class BaseAddressLdapHandler(BaseAddressHandler):
         nova_client.servers.set_meta_item(instance_id, "project-id", instance_project)
 
     def _run_remote_command(self, server, username, command):
-        ssh = paramiko.SSHClient()
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        try:
-            ssh.connect(server, username=username)
-        except (paramiko.SSHException, socket.error):
-            LOG.warning('Failed to connect to %s' % server)
-            return
-        stdin, stdout, stderr = ssh.exec_command(command)
-        outlines = stdout.readlines()
-        errlines = stderr.readlines()
-        LOG.debug('remote call produced stdout %s' % outlines)
-        LOG.debug('remote call produced stderr %s' % errlines)
-        return
+        ssh_command = ['/usr/bin/ssh', '-l%s' % username, server, command]
+
+        p = subprocess.Popen(ssh_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (out, error) = p.communicate()
+        rcode = p.wait()
+        return out, error, rcode
+
+        if rcode:
+            LOG.warning('Remote call %s to server %s failed: \n%s\n%s' %
+                        (command, server, out, error))
+            return False
+        return True
 
     def _resolve_project_name(self, tenant_id):
         try:
