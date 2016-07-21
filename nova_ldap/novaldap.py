@@ -17,7 +17,7 @@
 # This file is a slight modification of the nova notification driver found
 #  in the designate source at designate/notification_handler/nova.py
 
-from oslo.config import cfg
+from oslo_config import cfg
 from nova_ldap.base import BaseAddressLdapHandler
 from oslo_log import log as logging
 
