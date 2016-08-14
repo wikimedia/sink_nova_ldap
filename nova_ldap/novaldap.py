@@ -45,10 +45,6 @@ cfg.CONF.register_opts([
     cfg.StrOpt('salt_key_format', default=None),
     cfg.StrOpt('puppet_master_host', default=None),
     cfg.StrOpt('salt_master_host', default=None),
-    cfg.StrOpt('nova_auth_name', default=None),
-    cfg.StrOpt('nova_auth_pass', default=None),
-    cfg.StrOpt('nova_auth_project', default=None),
-    cfg.StrOpt('nova_auth_url', default=None),
 
     cfg.StrOpt('keystone_auth_name', default=None),
     cfg.StrOpt('keystone_auth_pass', default=None),
