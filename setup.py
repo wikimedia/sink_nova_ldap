@@ -18,7 +18,7 @@ requirements = []
 
 setuptools.setup(
     name="nova_ldap",
-    version="2016.7.1",
+    version="2016.8.1",
     author="Wikimedia Foundation",
     author_email="abogott@wikimedia.org",
     description="Designate sink handler that supports weird internal-to-WMF ldap host creation",
