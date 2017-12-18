@@ -252,7 +252,7 @@ class BaseAddressLdapHandler(BaseAddressHandler):
             passwd = cfg.CONF[self.name].keystone_auth_pass
             project = cfg.CONF[self.name].keystone_auth_project
             url = cfg.CONF[self.name].keystone_auth_url
-        except keyerror:  # noqa
+        except KeyError:
             LOG.debug('Missing a config setting for keystone auth.')
             return
 
