@@ -92,7 +92,8 @@ class BaseAddressLdapHandler(BaseAddressHandler):
         except ldap.NO_SUCH_OBJECT:
             LOG.debug("LDAP bind failure:  Unable to locate the bind DN account.\n")
         except ldap.UNWILLING_TO_PERFORM, msg:
-            LOG.debug("LDAP bind failure:  The LDAP server was unwilling to perform the action requested.\nError was: %s\n" % msg[0]["info"])
+            LOG.debug("LDAP bind failure:  The LDAP server was unwilling to perform the action requested.\n"
+                      "Error was: %s\n" % msg[0]["info"])
         except ldap.INVALID_CREDENTIALS:
             LOG.debug("LDAP bind failure:  Password incorrect.\n")
 
@@ -251,7 +252,7 @@ class BaseAddressLdapHandler(BaseAddressHandler):
             passwd = cfg.CONF[self.name].keystone_auth_pass
             project = cfg.CONF[self.name].keystone_auth_project
             url = cfg.CONF[self.name].keystone_auth_url
-        except keyerror:
+        except keyerror:  # noqa
             LOG.debug('Missing a config setting for keystone auth.')
             return
 
